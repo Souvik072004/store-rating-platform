@@ -3,7 +3,6 @@ const cors = require("cors");
 const { Pool } = require("pg");
 
 const app = express();
-
 app.use(cors());
 app.use(express.json());
 
@@ -15,22 +14,12 @@ const pool = new Pool({
   port: 5432,
 });
 
+// ================= ROOT =================
 app.get("/", (req, res) => {
-  res.send("Store Rating Backend Running 🚀");
+  res.send("Backend Running 🚀");
 });
 
-app.get("/test-db", async (req, res) => {
-  try {
-    const result = await pool.query("SELECT NOW()");
-    res.send(result.rows);
-  } catch (err) {
-    res.status(500).send("Database connection failed");
-  }
-});
-
-
-
-// ================= USER AUTH =================
+// ================= AUTH =================
 
 // SIGNUP
 app.post("/signup", async (req, res) => {
@@ -38,11 +27,11 @@ app.post("/signup", async (req, res) => {
     const { name, email, password, address, role } = req.body;
 
     const result = await pool.query(
-      "INSERT INTO users (name, email, password, address, role) VALUES ($1,$2,$3,$4,$5) RETURNING id,name,email,role",
+      "INSERT INTO users (name,email,password,address,role) VALUES ($1,$2,$3,$4,$5) RETURNING id,name,email,role",
       [name, email, password, address, role || "user"]
     );
 
-    res.send(result.rows[0]);
+    res.json(result.rows[0]);
   } catch (err) {
     res.status(500).send("Signup failed");
   }
@@ -62,159 +51,93 @@ app.post("/login", async (req, res) => {
       return res.status(401).send("Invalid credentials");
     }
 
-    res.send({
-      message: "Login successful",
-      user: result.rows[0],
-    });
-  } catch (err) {
+    res.json({ user: result.rows[0] });
+  } catch {
     res.status(500).send("Login failed");
   }
 });
 
+// ================= STORES =================
 
-
-// ================= STORE CRUD =================
-
-// ADD STORE (ADMIN ONLY)
+// ADD STORE (ADMIN)
 app.post("/add-store", async (req, res) => {
-  try {
-    const { name, userId } = req.body;
+  const { name, userId } = req.body;
 
-    const userCheck = await pool.query(
-      "SELECT role FROM users WHERE id=$1",
-      [userId]
-    );
+  const roleCheck = await pool.query(
+    "SELECT role FROM users WHERE id=$1",
+    [userId]
+  );
 
-    if (userCheck.rows.length === 0 || userCheck.rows[0].role !== "admin") {
-      return res.status(403).send("Only admin can add stores");
-    }
-
-    const result = await pool.query(
-      "INSERT INTO stores (name) VALUES ($1) RETURNING *",
-      [name]
-    );
-
-    res.send(result.rows[0]);
-  } catch (err) {
-    res.status(500).send("Insert failed");
+  if (roleCheck.rows[0]?.role !== "admin") {
+    return res.status(403).send("Only admin can add stores");
   }
+
+  const result = await pool.query(
+    "INSERT INTO stores (name) VALUES ($1) RETURNING *",
+    [name]
+  );
+
+  res.json(result.rows[0]);
 });
 
-// GET ALL STORES
-app.get("/stores", async (req, res) => {
-  try {
-    const result = await pool.query("SELECT * FROM stores ORDER BY id");
-    res.send(result.rows);
-  } catch {
-    res.status(500).send("Fetch failed");
-  }
-});
+// GET STORES WITH AVG RATING
+app.get("/stores-with-ratings", async (req, res) => {
+  const result = await pool.query(`
+    SELECT 
+      stores.id,
+      stores.name,
+      COALESCE(ROUND(AVG(ratings.rating),1),0) AS rating
+    FROM stores
+    LEFT JOIN ratings ON stores.id = ratings.store_id
+    GROUP BY stores.id
+    ORDER BY stores.id ASC
+  `);
 
-// UPDATE STORE
-app.put("/update-store/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { name } = req.body;
-
-    const result = await pool.query(
-      "UPDATE stores SET name=$1 WHERE id=$2 RETURNING *",
-      [name, id]
-    );
-
-    res.send(result.rows[0]);
-  } catch {
-    res.status(500).send("Update failed");
-  }
+  res.json(result.rows);
 });
 
 // DELETE STORE
 app.delete("/delete-store/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    await pool.query("DELETE FROM stores WHERE id=$1", [id]);
-    res.send("Store deleted");
-  } catch {
-    res.status(500).send("Delete failed");
-  }
+  await pool.query("DELETE FROM stores WHERE id=$1", [req.params.id]);
+  res.send("Deleted");
 });
 
+// UPDATE STORE NAME
+app.put("/update-store/:id", async (req, res) => {
+  const { name } = req.body;
 
+  const result = await pool.query(
+    "UPDATE stores SET name=$1 WHERE id=$2 RETURNING *",
+    [name, req.params.id]
+  );
+
+  res.json(result.rows[0]);
+});
 
 // ================= RATINGS =================
 
-// RATE STORE
-app.post("/rate-store/:storeId", async (req, res) => {
-  try {
-    const { storeId } = req.params;
-    const { rating, review } = req.body;
+// ADD RATING + REVIEW
+app.post("/rate-store", async (req, res) => {
+  const { storeId, rating, review } = req.body;
 
-    const result = await pool.query(
-      "INSERT INTO ratings (store_id,rating,review) VALUES ($1,$2,$3) RETURNING *",
-      [storeId, rating, review]
-    );
+  await pool.query(
+    "INSERT INTO ratings (store_id,rating,review) VALUES ($1,$2,$3)",
+    [storeId, rating, review]
+  );
 
-    res.send(result.rows[0]);
-  } catch {
-    res.status(500).send("Rating failed");
-  }
+  res.send("Rating added");
 });
 
-// STORE WITH AVG RATING
-app.get("/stores-with-ratings", async (req, res) => {
-  try {
-    const result = await pool.query(`
-      SELECT s.id, s.name, COALESCE(AVG(r.rating),0) AS avg_rating
-      FROM stores s
-      LEFT JOIN ratings r ON s.id=r.store_id
-      GROUP BY s.id
-      ORDER BY s.id
-    `);
-
-    res.send(result.rows);
-  } catch {
-    res.status(500).send("Fetch failed");
-  }
-});
-
-// SINGLE STORE DETAILS
-app.get("/store/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const result = await pool.query(`
-      SELECT s.id, s.name, COALESCE(AVG(r.rating),0) AS avg_rating
-      FROM stores s
-      LEFT JOIN ratings r ON s.id=r.store_id
-      WHERE s.id=$1
-      GROUP BY s.id
-    `, [id]);
-
-    if (result.rows.length === 0) return res.status(404).send("Store not found");
-
-    res.send(result.rows[0]);
-  } catch {
-    res.status(500).send("Failed to fetch store");
-  }
-});
-
-// STORE REVIEWS
+// GET REVIEWS FOR STORE
 app.get("/reviews/:storeId", async (req, res) => {
-  try {
-    const { storeId } = req.params;
+  const result = await pool.query(
+    "SELECT rating,review FROM ratings WHERE store_id=$1",
+    [req.params.storeId]
+  );
 
-    const result = await pool.query(
-      "SELECT rating, review FROM ratings WHERE store_id=$1",
-      [storeId]
-    );
-
-    res.send(result.rows);
-  } catch {
-    res.status(500).send("Failed to fetch reviews");
-  }
+  res.json(result.rows);
 });
 
-
-
+// ================= SERVER =================
 const PORT = 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
