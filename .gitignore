@@ -1,0 +1,14 @@
+node_modules/
+backend/node_modules/
+
+.env
+backend/.env
+
+.vscode/
+
+dist/
+build/
+
+coverage/
+
+*.log
