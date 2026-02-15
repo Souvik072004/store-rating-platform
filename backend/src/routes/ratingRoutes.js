@@ -1,9 +1,8 @@
 const express = require("express");
-const { rateStore } = require("../controllers/ratingController");
-const { protect } = require("../middleware/authMiddleware");
-
 const router = express.Router();
 
-router.post("/", protect, rateStore);
+const { getRatings } = require("../controllers/ratingController");
+
+router.get("/", getRatings);
 
 module.exports = router;
