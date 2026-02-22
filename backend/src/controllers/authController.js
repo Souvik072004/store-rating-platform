@@ -38,7 +38,7 @@ exports.signup = async (req, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
-      token: generateToken(user.id),
+      token: generateToken(user.id, user.role),
     });
 
   } catch (error) {
@@ -74,7 +74,7 @@ exports.login = async (req, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
-      token: generateToken(user.id),
+      token: generateToken(user.id, user.role),
     });
 
   } catch (error) {

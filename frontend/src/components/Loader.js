@@ -1,5 +1,9 @@
 function Loader() {
-  return <h3>Loading...</h3>;
+  return (
+    <div className="loader-wrap">
+      <div className="loader" aria-label="Loading" />
+    </div>
+  );
 }
 
 export default Loader;

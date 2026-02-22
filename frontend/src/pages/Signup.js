@@ -2,11 +2,13 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-function Login() {
-  const { user, login, authChecked } = useAuth();
+function Signup() {
+  const { user, signup, authChecked } = useAuth();
   const navigate = useNavigate();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState("user");
 
   useEffect(() => {
     if (authChecked && user) {
@@ -16,23 +18,35 @@ function Login() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    login(email, password);
+    signup(name, email, password, role);
   };
 
   if (!authChecked || user) {
-    return null; // or <Loader /> while redirecting
+    return null;
   }
 
   return (
     <div className="auth-layout">
       <div className="auth-card">
-        <h1>Login</h1>
-        <p className="sub">Sign in to rate stores and manage your account.</p>
+        <h1>Sign up</h1>
+        <p className="sub">Create an account to rate stores.</p>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="login-email">Email</label>
+            <label htmlFor="signup-name">Name</label>
             <input
-              id="login-email"
+              id="signup-name"
+              type="text"
+              className="input"
+              placeholder="Your name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="signup-email">Email</label>
+            <input
+              id="signup-email"
               type="email"
               className="input"
               placeholder="you@example.com"
@@ -42,9 +56,9 @@ function Login() {
             />
           </div>
           <div className="form-group">
-            <label htmlFor="login-password">Password</label>
+            <label htmlFor="signup-password">Password</label>
             <input
-              id="login-password"
+              id="signup-password"
               type="password"
               className="input"
               placeholder="••••••••"
@@ -53,16 +67,28 @@ function Login() {
               required
             />
           </div>
+          <div className="form-group">
+            <label htmlFor="signup-role">Role</label>
+            <select
+              id="signup-role"
+              className="select"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+            >
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
           <button type="submit" className="btn btn-primary" style={{ width: "100%" }}>
-            Login
+            Sign up
           </button>
         </form>
         <p className="link-row">
-          Don&apos;t have an account? <Link to="/signup">Sign up</Link>
+          Already have an account? <Link to="/">Login</Link>
         </p>
       </div>
     </div>
   );
 }
 
-export default Login;
+export default Signup;

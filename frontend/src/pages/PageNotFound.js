@@ -1,7 +1,11 @@
+import { Link } from "react-router-dom";
+
 function PageNotFound() {
   return (
-    <div style={{ padding: "50px" }}>
-      <h2>404 - Page Not Found</h2>
+    <div className="not-found">
+      <h1>404</h1>
+      <p>Page not found.</p>
+      <Link to="/">Go home</Link>
     </div>
   );
 }
