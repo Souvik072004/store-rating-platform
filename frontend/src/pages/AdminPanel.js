@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+// ❌ removed Link import
+// import { Link } from "react-router-dom";
+
 import axios from "../api/axios";
 import { useToast } from "../context/ToastContext";
 
@@ -14,7 +16,11 @@ function AdminPanel() {
     setLoading(true);
 
     try {
-      await axios.post("/stores", { name: name.trim(), address: address.trim() || undefined });
+      await axios.post("/stores", { 
+        name: name.trim(), 
+        address: address.trim() || undefined 
+      });
+
       showToast("Store added successfully!", "success");
       setName("");
       setAddress("");
@@ -51,6 +57,7 @@ function AdminPanel() {
               required
             />
           </div>
+
           <div className="form-group">
             <label htmlFor="address">Address (optional)</label>
             <input
@@ -62,6 +69,7 @@ function AdminPanel() {
               onChange={(e) => setAddress(e.target.value)}
             />
           </div>
+
           <button type="submit" className="btn btn-primary" disabled={loading}>
             {loading ? "Adding…" : "Add Store"}
           </button>
