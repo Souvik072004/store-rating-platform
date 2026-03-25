@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const instance = axios.create({
-  baseURL: "http://localhost:5000/api",
+  baseURL: "https://store-rating-platform-2htm.onrender.com/api",
   headers: {
     "Content-Type": "application/json",
   },
@@ -25,10 +25,7 @@ instance.interceptors.request.use(
 instance.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Only redirect on 401 for protected routes (auth routes)
-    // Public routes like /stores should handle 401 errors themselves
     if (error.response?.status === 401 && error.config?.url?.includes("/auth")) {
-      // Token expired or invalid for auth routes
       localStorage.removeItem("token");
       window.location.href = "/";
     }
