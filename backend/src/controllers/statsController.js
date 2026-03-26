@@ -1,7 +1,25 @@
 const pool = require("../config/db");
+const demoService = require("../demo/demoService");
+
+const shouldUseDemo = () => {
+  if (process.env.DEMO_MODE === "true") return true;
+  return !pool.isDbAvailable?.();
+};
+
+const isLikelyDbUnavailable = (error) => {
+  const code = error?.code;
+  const msg = (error?.message || "").toLowerCase();
+  if (!process.env.DATABASE_URL) return true;
+  if (["ECONNREFUSED", "ENOTFOUND"].includes(code)) return true;
+  return /connect|timeout|database|relation.*does not exist|syntax|does not exist/i.test(msg) || false;
+};
 
 exports.getStats = async (req, res) => {
   try {
+    if (shouldUseDemo()) {
+      return res.json(demoService.getStats());
+    }
+
     const [storesRes, usersRes] = await Promise.all([
       pool.query("SELECT COUNT(*)::int AS count FROM stores"),
       pool.query("SELECT COUNT(*)::int AS count FROM users")
@@ -30,6 +48,9 @@ exports.getStats = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
+    if (shouldUseDemo() || isLikelyDbUnavailable(error)) {
+      return res.json(demoService.getStats());
+    }
     res.status(500).json({ message: "Server error" });
   }
 };

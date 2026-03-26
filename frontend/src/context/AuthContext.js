@@ -61,6 +61,17 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const guestLogin = async () => {
+    try {
+      const res = await axios.post("/auth/guest");
+      setAuthFromResponse(res);
+      showToast("Guest login successful", "success");
+      window.location.href = "/dashboard";
+    } catch (err) {
+      showToast(err.response?.data?.message || "Guest login failed", "error");
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem(USER_KEY);
@@ -69,7 +80,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, signup, logout, authChecked }}>
+    <AuthContext.Provider value={{ user, login, signup, guestLogin, logout, authChecked }}>
       {children}
     </AuthContext.Provider>
   );

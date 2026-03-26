@@ -5,6 +5,10 @@ const generateToken = require("../utils/generateToken");
 // ================= SIGNUP =================
 exports.signup = async (req, res) => {
   try {
+    if (process.env.DEMO_MODE === "true" || !pool.isDbAvailable?.()) {
+      return res.status(503).json({ message: "Database not available. Please use Guest login." });
+    }
+
     const { name, email, password, role } = req.body;
 
     if (!name || !email || !password) {
@@ -50,6 +54,10 @@ exports.signup = async (req, res) => {
 // ================= LOGIN =================
 exports.login = async (req, res) => {
   try {
+    if (process.env.DEMO_MODE === "true" || !pool.isDbAvailable?.()) {
+      return res.status(503).json({ message: "Database not available. Please use Guest login." });
+    }
+
     const { email, password } = req.body;
 
     const userResult = await pool.query(
@@ -79,6 +87,27 @@ exports.login = async (req, res) => {
 
   } catch (error) {
     console.error("LOGIN ERROR:", error.message);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Guest login is meant for demos when DB/auth user provisioning isn't available.
+// It returns a signed JWT without performing any database operations.
+exports.guestLogin = async (req, res) => {
+  try {
+    const guest = {
+      id: "guest",
+      name: "Guest",
+      email: "guest@example.com",
+      role: "user",
+    };
+
+    res.json({
+      ...guest,
+      token: generateToken(guest.id, guest.role),
+    });
+  } catch (error) {
+    console.error("GUEST LOGIN ERROR:", error?.message || error);
     res.status(500).json({ message: "Server error" });
   }
 };

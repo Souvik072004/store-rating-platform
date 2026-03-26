@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 function Login() {
-  const { user, login, authChecked } = useAuth();
+  const { user, login, guestLogin, authChecked } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -55,6 +55,16 @@ function Login() {
           </div>
           <button type="submit" className="btn btn-primary" style={{ width: "100%" }}>
             Login
+          </button>
+
+          <div style={{ height: 12 }} />
+          <button
+            type="button"
+            className="btn btn-ghost"
+            style={{ width: "100%" }}
+            onClick={guestLogin}
+          >
+            Guest login
           </button>
         </form>
         <p className="link-row">
